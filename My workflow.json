@@ -1,0 +1,183 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9051ea14-0bf3-467e-a44c-4431be8c173e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a warm, 3-sentence cold email. Start with \"Hey there!\" — do NOT use any names. Mention the company \"{{ $json.Company }}\" and reference that they are in HR/recruiting. Pitch our AI tool \"RecruitAI\" that saves HR teams 10 hours per week on candidate screening. Be specific, not salesy. Output ONLY the email body with NO brackets, NO placeholders, NO sign-off with a name. End with \"Best regards, The RecruitAI Team\".",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "59aa50c9-f677-41e1-ae01-793e94868314",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelSource": "inferenceProfile",
+        "model": "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAwsBedrock",
+      "typeVersion": 1.1,
+      "position": [
+        288,
+        208
+      ],
+      "id": "c892e41d-279d-4430-a02c-fa11a5dfed7d",
+      "name": "AWS Bedrock Chat Model",
+      "credentials": {
+        "aws": {
+          "id": "2kMddZb9nF0BcQBP",
+          "name": "AWS (IAM) account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prospect",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        0
+      ],
+      "id": "e5f97dae-49b2-4921-a5cc-a7f852d83acc",
+      "name": "Webhook",
+      "webhookId": "4f715b16-9afe-499b-82fc-962c9d0bf36e"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://uxujy733dxxq5vrunug4mi2upm0klsal.lambda-url.eu-west-3.on.aws/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sector\": \"{{ $json.body.sector }}\",\n  \"city\": \"{{ $json.body.city }}\",\n  \"limit\": {{ $json.body.limit }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        448,
+        0
+      ],
+      "id": "b5898717-8bf2-4b45-98fe-3a1c1d3605cd",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('HTTP Request').item.json.Email }}",
+        "subject": "=Quick question about hiring at {{ $('HTTP Request').item.json.Company }}",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "a737941c-7f27-4995-ad86-a025201786ac",
+      "name": "Send a message",
+      "webhookId": "39b957c6-ddc8-497a-aed2-904edeef8195",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wrRWUzLZlAdbl51I",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AWS Bedrock Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2690ff6a-7491-4b36-a487-fe9815a01ae7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d119a0fe0db785fe3110b6aa2ed81857edd2335f815b2138f3ea665a93833b23"
+  },
+  "id": "prgdAbwSHXaROAim",
+  "tags": []
+}
